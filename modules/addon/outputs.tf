@@ -47,4 +47,3 @@ output "conflict_resolution_strategy_on_update" {
   description = "EKS 기본값에서 값을 변경하는 경우 추가기능에 대한 충돌을 해결하는 방법."
   value       = aws_eks_addon.this.resolve_conflicts_on_update
 }
-

@@ -53,7 +53,7 @@ variable "security_groups" {
   nullable    = false
 }
 
-variable "cluster_ingress_rules" {
+variable "security_group_ingress_rules" {
   description = <<EOF
   (선택) 수신 규칙 설정. `ingress_rules` 블록 내용.
     (Required) `id` - 수신에 대한 규칙 ID 값 Terraform 코드에서만 사용.
@@ -84,7 +84,7 @@ variable "cluster_ingress_rules" {
 
   validation {
     condition = alltrue([
-      for rule in var.ingress_rules :
+      for rule in var.security_group_ingress_rules :
       anytrue([
         length(rule.ipv4_cidrs) > 0,
         length(rule.ipv6_cidrs) > 0,
@@ -97,7 +97,7 @@ variable "cluster_ingress_rules" {
   }
 }
 
-variable "cluster_egress_rules" {
+variable "security_group_egress_rules" {
   description = <<EOF
   (선택) 송신 규칙 설정. `ingress_rules` 블록 내용.
     (Required) `id` - 송신에 대한 규칙 ID 값 Terraform 코드에서만 사용.
@@ -128,7 +128,7 @@ variable "cluster_egress_rules" {
 
   validation {
     condition = alltrue([
-      for rule in var.egress_rules :
+      for rule in var.security_group_egress_rules :
       anytrue([
         length(rule.ipv4_cidrs) > 0,
         length(rule.ipv6_cidrs) > 0,
@@ -145,18 +145,13 @@ variable "endpoint_access" {
   description = <<EOF
   (선택) Kubernetes API 서버 엔드포인트 액세스 구성. `endpoint_access` 블록 내용.
     (선택) `private_access_enabled` - 클러스터의 Kubernetes API 서버 엔드포인트에 대한 private 액세스를 활성화할지 여부. Default: `true`.
-    (선택) `private_access_cidrs` - 클러스터의 kubernetes API 서버 엔드포인트에 대한 private 통신하도록 허용된 CIDR 목록.
-    (선택) `private_access_security_groups` - 클러스터의 kubernetes API 서버 엔드포인트에 대한 private 통신하도록 허용된 보안그룹 목록.
     (선택) `public_access_enabled` - 클러스터의 Kubernetes API 서버 엔드포인트에 대한 public 액세스를 활성화할지 여부. Default: `false`
     (선택) `public_access_cidrs` - 클러스터의 kubernetes API 서버 엔드포인트에 대한 public 통신하도록 허용된 CIDR 목록. Default: `0.0.0.0/0` .
   EOF
   type = object({
-    private_access_enabled         = optional(bool, true)
-    private_access_cidrs           = optional(list(string), [])
-    private_access_security_groups = optional(list(string), [])
-
-    public_access_enabled = optional(bool, false)
-    public_access_cidrs   = optional(list(string), ["0.0.0.0/0"])
+    private_access_enabled = optional(bool, true)
+    public_access_enabled  = optional(bool, false)
+    public_access_cidrs    = optional(list(string), ["0.0.0.0/0"])
   })
   default  = {}
   nullable = false

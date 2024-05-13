@@ -16,8 +16,8 @@ resource "aws_ec2_tag" "cluster_security_group" {
 }
 
 locals {
-  cluster_ingress_rules = concat([], [
-    for rule in var.cluster_ingress_rules :
+  security_group_ingress_rules = concat([], [
+    for rule in var.security_group_ingress_rules :
     concat(
       [
         for cidr in rule.ipv4_cidrs :
@@ -96,15 +96,15 @@ locals {
           ipv4_cidr      = null
           ipv6_cidr      = null
           prefix_list    = null
-          security_group = aws_security_group.this.id
+          security_group = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
         }
         if self
       ]
     )
   ]...)
 
-  cluster_egress_rules = concat([], [
-    for rule in var.cluster_egress_rules :
+  security_group_egress_rules = concat([], [
+    for rule in var.security_group_egress_rules :
     concat(
       [
         for cidr in rule.ipv4_cidrs :
@@ -183,7 +183,7 @@ locals {
           ipv4_cidr      = null
           ipv6_cidr      = null
           prefix_list    = null
-          security_group = aws_security_group.this.id
+          security_group = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
         }
         if self
       ]
@@ -193,7 +193,7 @@ locals {
 
 resource "aws_vpc_security_group_ingress_rule" "this" {
   for_each = {
-    for rule in local.cluster_ingress_rules :
+    for rule in local.security_group_ingress_rules :
     rule.id => rule
   }
   security_group_id = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
@@ -224,11 +224,11 @@ resource "aws_vpc_security_group_ingress_rule" "this" {
 
 resource "aws_vpc_security_group_egress_rule" "this" {
   for_each = {
-    for rule in local.cluster_egress_rules :
+    for rule in local.security_group_egress_rules :
     rule.id => rule
   }
 
-  security_group_id = aws_security_group.this.id
+  security_group_id = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
   description       = each.value.description
 
   ip_protocol = each.value.protocol
