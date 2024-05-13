@@ -26,7 +26,7 @@ resource "aws_launch_template" "this" {
 
   image_id      = var.instance_ami
   instance_type = var.instance_type
-  key_name      = var.instance_ssh_key
+  key_name      = var.instance_key
 
   ebs_optimized = var.ebs_optimized
 
@@ -84,7 +84,7 @@ resource "aws_autoscaling_group" "this" {
   max_size         = var.max_size
   desired_capacity = var.desired_size
 
-  vpc_zone_identifier = var.subnet_ids
+  vpc_zone_identifier = var.subnets
   target_group_arns   = var.target_group_arns
 
   force_delete    = var.force_delete

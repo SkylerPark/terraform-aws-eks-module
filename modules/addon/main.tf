@@ -1,8 +1,31 @@
+locals {
+  addon_version = {
+    "custom"  = var.addon_version
+    "default" = data.aws_eks_addon_version.default.version
+    "latest"  = data.aws_eks_addon_version.latest.version
+  }
+}
+
+data "aws_eks_cluster" "this" {
+  name = var.cluster_name
+}
+
+data "aws_eks_addon_version" "default" {
+  addon_name         = var.name
+  kubernetes_version = data.aws_eks_cluster.this.version
+}
+
+data "aws_eks_addon_version" "latest" {
+  addon_name         = var.name
+  kubernetes_version = data.aws_eks_cluster.this.version
+  most_recent        = true
+}
+
 resource "aws_eks_addon" "this" {
   cluster_name = var.cluster_name
 
   addon_name    = var.name
-  addon_version = var.addon_version
+  addon_version = local.addon_version[local.addon_version_type]
 
   configuration_values = var.configuration
 
@@ -24,19 +47,4 @@ resource "aws_eks_addon" "this" {
     },
     var.tags
   )
-}
-
-data "aws_eks_cluster" "this" {
-  name = var.cluster_name
-}
-
-data "aws_eks_addon_version" "default" {
-  addon_name         = var.name
-  kubernetes_version = data.aws_eks_cluster.this.version
-}
-
-data "aws_eks_addon_version" "latest" {
-  addon_name         = var.name
-  kubernetes_version = data.aws_eks_cluster.this.version
-  most_recent        = true
 }
