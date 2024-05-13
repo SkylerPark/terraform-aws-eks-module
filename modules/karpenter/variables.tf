@@ -7,10 +7,10 @@ variable "provisioner" {
     (선택) `consolidation` - karpenter 안정성 및 성능 향상에 대한 옵션 map(string).
   EOF
   type = object({
-    name          = string
-    requirements  = list(any)
-    provider_ref  = map(string)
-    consolidation = map(string)
+    name          = optional(string)
+    requirements  = optional(list(any), [])
+    provider_ref  = optional(map(string))
+    consolidation = optional(map(string))
   })
   default  = {}
   nullable = false

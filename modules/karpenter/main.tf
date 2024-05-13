@@ -30,9 +30,6 @@ locals {
 resource "kubectl_manifest" "provisioner" {
   yaml_body  = local.provisioner_yaml
   apply_only = true
-  depends_on = [
-    module.helm_karpenter
-  ]
 }
 
 resource "kubectl_manifest" "aws_node_template" {

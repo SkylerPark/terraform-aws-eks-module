@@ -11,4 +11,3 @@ module "vpc" {
     enabled = true
   }
 }
-
