@@ -147,6 +147,24 @@ variable "ebs_optimized" {
   nullable    = false
 }
 
+variable "spot_enabled" {
+  description = "(선택) Spot 인스턴스 활성화 default: `false`"
+  type        = bool
+  default     = false
+}
+
+variable "metadata_options" {
+  description = <<EOF
+  (선택) 인스턴스 메타데이터 옵션. `metadata_options` 블록 내용.
+    (선택) `http_endpoint_enabled` - 메타 데이터를 사용할수 있는지 여부 default: `true`.
+    (선택) `http_tokens_enabled` - 메타 데이터 서비스에 세션 토큰이 필요한지 여부 default: `true`.
+    (선택) `http_put_response_hop_limit` - 인스턴스 메타데이터 요청 HTTP PUT 응답 홉 제한. 가능한 값 `1` to `64`. default: `1`.
+    (선택) `instance_tags_enabled` - 인스턴스 메타데이터 Tag 엑세스 활성화 default: `true`.
+  EOF
+  type        = any
+  default     = null
+}
+
 variable "security_groups" {
   description = "(선택) Node Group 에 연결할 추가 보안 그룹 ID 목록."
   type        = list(string)

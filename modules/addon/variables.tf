@@ -4,6 +4,12 @@ variable "cluster_name" {
   nullable    = false
 }
 
+variable "cluster_version" {
+  description = "(필수) EKS cluster version."
+  type        = string
+  nullable    = false
+}
+
 variable "name" {
   description = "(필수) EKS addon 이름."
   type        = string

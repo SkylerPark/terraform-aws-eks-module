@@ -34,6 +34,25 @@ resource "aws_launch_template" "this" {
 
   instance_initiated_shutdown_behavior = "terminate"
 
+  dynamic "instance_market_options" {
+    for_each = var.spot_enabled ? ["go"] : []
+    content {
+      market_type = "spot"
+    }
+  }
+
+  dynamic "metadata_options" {
+    for_each = var.metadata_options != null ? [var.metadata_options] : []
+    iterator = metadata
+
+    content {
+      http_endpoint               = try(metadata.value.http_endpoint_enabled, true) ? "enabled" : "disabled"
+      http_tokens                 = try(metadata.value.http_tokens_enabled, true) ? "required" : "optional"
+      http_put_response_hop_limit = try(metadata.value.http_put_response_hop_limit, 1)
+      instance_metadata_tags      = try(metadata.value.instance_tags_enabled, true) ? "enabled" : "disabled"
+    }
+  }
+
   block_device_mappings {
     device_name = "/dev/xvda"
 

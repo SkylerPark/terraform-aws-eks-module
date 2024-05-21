@@ -6,18 +6,14 @@ locals {
   }
 }
 
-data "aws_eks_cluster" "this" {
-  name = var.cluster_name
-}
-
 data "aws_eks_addon_version" "default" {
   addon_name         = var.name
-  kubernetes_version = data.aws_eks_cluster.this.version
+  kubernetes_version = var.cluster_version
 }
 
 data "aws_eks_addon_version" "latest" {
   addon_name         = var.name
-  kubernetes_version = data.aws_eks_cluster.this.version
+  kubernetes_version = var.cluster_version
   most_recent        = true
 }
 
