@@ -1,4 +1,4 @@
-# terraform-aws-template
+# terraform-aws-eks-module
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&style=flat-square)](https://github.com/pre-commit/pre-commit)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -20,19 +20,383 @@
 
 Terraform 모듈을 사용하여 아래 서비스를 관리 합니다.
 
-- **AWS EC2 (Elastic Compute Cloud)**
-  - instance
-  - aspot request
-  - key pair
+- **AWS EKS (Elastic Kubernetes Service)**
+  - cluster
+  - node group
+  - aws auth
+  - eni config
+  - fargate profile
+  - addon
+  - helm release
+  - karpenter
 
 ## Usage
 
 아래 예시를 활용하여 작성가능하며 examples 코드를 참고 부탁드립니다.
 
-### Single EC2 Instance
+### Cluster
+
+EKS Cluster 를 생성 하는 예시 입니다.
 
 ```hcl
-module "ec2_instance" {
-  source ""
+module "cluster" {
+  source = "../../modules/cluster"
+  name   = local.eks_cluster_name
+
+  kubernetes_version = local.eks_version
+  iam_role           = module.cluster_role.arn
+
+  subnets         = concat(module.subnet_group["parksm-public-subnet"].ids, module.subnet_group["parksm-private-subnet"].ids)
+  security_groups = [module.control_plane_sg.id]
+
+  endpoint_access = {
+    private_access_enabled = true
+    public_access_enabled  = true
+  }
+
+  secrets_encryption = {
+    enabled = true
+    kms_key = module.cluster_kms.arn
+  }
 }
+
+module "oidc_provider" {
+  source = "git::https://github.com/SkylerPark/terraform-aws-iam-module.git//modules/iam-oidc-identity-provider/?ref=tags/1.0.1"
+
+  url       = module.cluster.irsa_oidc_provider_url
+  audiences = ["sts.amazonaws.com"]
+
+  auto_thumbprint_enabled = true
+}
+```
+
+### Self Managed Node Group
+
+Self Managed Node Group 을 생성 하는 예시 입니다.
+
+```hcl
+data "aws_ami" "eks_default" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amazon-eks-node-${local.eks_version}-v*"]
+  }
+}
+
+data "aws_ami" "eks_default_arm" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amazon-eks-arm64-node-${local.eks_version}-v*"]
+  }
+}
+
+module "node_group_role" {
+  source = "git::https://github.com/SkylerPark/terraform-aws-iam-module.git//modules/iam-role/?ref=tags/1.0.1"
+  name   = "${local.eks_name}-node-role"
+  trusted_service_policies = [
+    {
+      services = ["ec2.amazonaws.com"]
+    }
+  ]
+  policies = [
+    "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy",
+    "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+  ]
+  force_detach_policies = true
+  instance_profile = {
+    enabled = true
+  }
+}
+
+module "node_group" {
+  source           = "../../modules/node-group"
+  name             = "${local.eks_cluster_name}-node-group"
+  cluster_name     = local.eks_cluster_name
+  instance_ami     = data.aws_ami.eks_default_arm.id
+  instance_type    = "t4g.medium"
+  instance_key     = module.ssh_key.name
+  instance_profile = module.node_group_role.instance_profile.name
+
+  spot_enabled = true
+
+  security_groups = [module.node_sg.id]
+
+  subnets = module.subnet_group["parksm-private-subnet"].ids
+
+  min_size     = 2
+  max_size     = 10
+  desired_size = 2
+
+
+  metadata_options = {
+    http_endpoint_enabled = true
+    http_tokens_enabled   = true
+    instance_tags_enabled = true
+  }
+
+  root_volume_encryption_enabled = true
+  root_volume_type               = "gp3"
+  root_volume_size               = 50
+}
+```
+
+### Fargate Profile
+
+Fargate Profile 을 생성 하는 예시 입니다.
+
+```hcl
+module "fargate_role" {
+  source = "git::https://github.com/SkylerPark/terraform-aws-iam-module.git//modules/iam-role/?ref=tags/1.0.1"
+  name   = "${local.eks_name}-fargate-role"
+  trusted_service_policies = [
+    {
+      services = ["eks-fargate-pods.amazonaws.com"]
+    }
+  ]
+  policies = [
+    "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
+  ]
+  force_detach_policies = true
+}
+
+module "fargate" {
+  source   = "../../modules/fargate-profile"
+  for_each = toset(["karpenter", "kube-system"])
+
+  name         = each.key
+  cluster_name = local.eks_cluster_name
+
+  subnets  = module.subnet_group["parksm-private-subnet"].ids
+  iam_role = module.fargate_role.arn
+
+  selectors = [
+    {
+      namespace = each.key
+    }
+  ]
+}
+```
+
+### Helm Release
+
+helm release 를 이용한 aws load balancer controller 예시 입니다.
+
+```hcl
+locals {
+  helm_releases = {
+    "aws-load-balancer-controller" = {
+      description   = "A Helm chart to deploy aws-load-balancer-controller for ingress resources"
+      namespace     = "kube-system"
+      repository    = "https://aws.github.io/eks-charts"
+      chart         = "aws-load-balancer-controller"
+      chart_version = "1.6.2"
+      set = [
+        {
+          name  = "serviceAccount.create"
+          value = "true"
+        },
+        {
+          name  = "region"
+          value = "ap-northeast-2"
+        },
+        {
+          name  = "vpcId"
+          value = module.vpc.id
+        },
+        {
+          name  = "image.repository"
+          value = "602401143452.dkr.ecr.ap-northeast-2.amazonaws.com/amazon/aws-load-balancer-controller"
+        },
+        {
+          name  = "serviceAccount.name"
+          value = "aws-load-balancer-controller"
+        },
+        {
+          name  = "clusterName"
+          value = local.eks_cluster_name
+        },
+        {
+          name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+          value = module.load_balancer_controller_role.arn
+        }
+      ]
+    }
+  }
+}
+
+module "helm_releases" {
+  source        = "../../modules/helm-release"
+  for_each      = local.helm_releases
+  name          = each.key
+  description   = each.value.description
+  namespace     = each.value.namespace
+  repository    = each.value.repository
+  chart         = each.value.chart
+  chart_version = each.value.chart_version
+  set           = each.value.set
+}
+```
+
+### Karpenter
+
+Karpenter 를 이용한 Node Less 예시 입니다.
+
+```hcl
+module "karpenter_node_role" {
+  source = "git::https://github.com/SkylerPark/terraform-aws-iam-module.git//modules/iam-role/?ref=tags/1.0.1"
+  name   = "karpenter-node-role"
+  trusted_service_policies = [
+    {
+      services = ["ec2.amazonaws.com"]
+    }
+  ]
+  policies = [
+    "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy",
+    "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
+  ]
+  force_detach_policies = true
+  instance_profile = {
+    enabled = true
+  }
+}
+
+module "karpenter_controller_role" {
+  source = "git::https://github.com/SkylerPark/terraform-aws-iam-module.git//modules/iam-role/?ref=tags/1.0.1"
+  name   = "karpenter-controller-role"
+  trusted_oidc_provider_policies = [
+    {
+      url = module.cluster.irsa_oidc_provider_url
+      conditions = [
+        {
+          key       = "sub"
+          condition = "StringEquals"
+          values    = ["system:serviceaccount:karpenter:karpenter"]
+        },
+        {
+          key       = "aud"
+          condition = "StringEquals"
+          values    = ["sts.amazonaws.com"]
+        }
+      ]
+    }
+  ]
+  force_detach_policies = true
+  inline_policies = {
+    "karpenter-controller-policy" = jsonencode(
+      {
+        "Statement" : [
+          {
+            "Action" : [
+              "ssm:GetParameter",
+              "iam:PassRole",
+              "ec2:DescribeImages",
+              "ec2:RunInstances",
+              "ec2:DescribeSubnets",
+              "ec2:DescribeSecurityGroups",
+              "ec2:DescribeLaunchTemplates",
+              "ec2:DescribeInstances",
+              "ec2:DescribeInstanceTypes",
+              "ec2:DescribeInstanceTypeOfferings",
+              "ec2:DescribeAvailabilityZones",
+              "ec2:DeleteLaunchTemplate",
+              "ec2:CreateTags",
+              "ec2:CreateLaunchTemplate",
+              "ec2:CreateFleet",
+              "ec2:DescribeSpotPriceHistory",
+              "pricing:GetProducts"
+            ],
+            "Effect" : "Allow",
+            "Resource" : "*",
+            "Sid" : "Karpenter"
+          },
+          {
+            "Action" : "ec2:TerminateInstances",
+            "Condition" : {
+              "StringLike" : {
+                "ec2:ResourceTag/Name" : "${local.eks_name}-*"
+              }
+            },
+            "Effect" : "Allow",
+            "Resource" : "*",
+            "Sid" : "ConditionalEC2Termination"
+          }
+        ],
+        "Version" : "2012-10-17"
+      }
+    )
+  }
+}
+
+module "karpenter" {
+  source = "../../modules/karpenter"
+  provisioner = {
+    name = "default"
+    requirements = [
+      {
+        key      = "karpenter.k8s.aws/instance-family"
+        operator = "In"
+        values   = ["c5", "m5", "r5"]
+      },
+      {
+        key      = "karpenter.k8s.aws/instance-size"
+        operator = "NotIn"
+        values   = ["nano", "micro", "small", "large"]
+      },
+      {
+        key      = "topology.kubernetes.io/zone"
+        operator = "In"
+        values   = ["ap-northeast-2a", "ap-northeast-2c"]
+      },
+      {
+        key      = "karpenter.sh/capacity-type"
+        operator = "In"
+        values   = ["spot"]
+      },
+      {
+        key      = "kubernetes.io/arch"
+        operator = "In"
+        values : ["arm64"]
+      }
+    ]
+    provider_ref = {
+      name = "default"
+    }
+    consolidation = {
+      enabled = true
+    }
+  }
+  aws_node_template = {
+    name = "default"
+    subnet_selector = {
+      "karpenter.sh/discovery" = local.eks_name
+    }
+    security_group_selector = {
+      "karpenter.sh/discovery" = local.eks_name
+    }
+    ami_family = "AL2"
+    block_device_mappings = [
+      {
+        deviceName = "/dev/xvda"
+        ebs = {
+          amiFamily           = "AL2"
+          volumeSize          = "50G"
+          volumeType          = "gp3"
+          iops                = 3000
+          throughput          = 125
+          deleteOnTermination = true
+          encrypted           = true
+        }
+      }
+    ]
+    tags = {
+      Name = "${local.eks_cluster_name}-node"
+    }
+  }
+}
+
 ```
