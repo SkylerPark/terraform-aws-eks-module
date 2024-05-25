@@ -46,6 +46,7 @@ No modules.
 | <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | (필수) 인스턴스 유형. | `string` | n/a | yes |
 | <a name="input_kubelet_extra_args"></a> [kubelet\_extra\_args](#input\_kubelet\_extra\_args) | (선택) kubelet 추가 목록. | `list(string)` | `[]` | no |
 | <a name="input_max_size"></a> [max\_size](#input\_max\_size) | (필수) 최대 인스턴스 수. | `number` | n/a | yes |
+| <a name="input_metadata_options"></a> [metadata\_options](#input\_metadata\_options) | (선택) 인스턴스 메타데이터 옵션. `metadata_options` 블록 내용.<br>    (선택) `http_endpoint_enabled` - 메타 데이터를 사용할수 있는지 여부 default: `true`.<br>    (선택) `http_tokens_enabled` - 메타 데이터 서비스에 세션 토큰이 필요한지 여부 default: `true`.<br>    (선택) `http_put_response_hop_limit` - 인스턴스 메타데이터 요청 HTTP PUT 응답 홉 제한. 가능한 값 `1` to `64`. default: `1`.<br>    (선택) `instance_tags_enabled` - 인스턴스 메타데이터 Tag 엑세스 활성화 default: `true`. | `any` | `null` | no |
 | <a name="input_min_size"></a> [min\_size](#input\_min\_size) | (필수) 최소 인스턴스 수. | `number` | n/a | yes |
 | <a name="input_monitoring_enabled"></a> [monitoring\_enabled](#input\_monitoring\_enabled) | (선택) 인스턴스 세부 모니터링 활성화 여부. Default: `false` | `bool` | `false` | no |
 | <a name="input_name"></a> [name](#input\_name) | (필수) node group 이름. | `string` | n/a | yes |
@@ -58,6 +59,7 @@ No modules.
 | <a name="input_root_volume_throughput"></a> [root\_volume\_throughput](#input\_root\_volume\_throughput) | (선택) `root_volume_type` 이 `gp3` 일 경우 처리량 MiB/s. 최대값 1,000 MiB/s. | `number` | `null` | no |
 | <a name="input_root_volume_type"></a> [root\_volume\_type](#input\_root\_volume\_type) | (선택) root volume 타입. `gp2`, `gp3`, `io1`, `io2`, `sc1`, `st1`. Default: `gp3` | `string` | `"gp3"` | no |
 | <a name="input_security_groups"></a> [security\_groups](#input\_security\_groups) | (선택) Node Group 에 연결할 추가 보안 그룹 ID 목록. | `list(string)` | `[]` | no |
+| <a name="input_spot_enabled"></a> [spot\_enabled](#input\_spot\_enabled) | (선택) Spot 인스턴스 활성화 default: `false` | `bool` | `false` | no |
 | <a name="input_subnets"></a> [subnets](#input\_subnets) | (필수) node group 을 생성한 subnets. | `list(string)` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | (선택) 리소스 태그 내용. | `map(string)` | `{}` | no |
 | <a name="input_target_group_arns"></a> [target\_group\_arns](#input\_target\_group\_arns) | (선택) alb or nlb 와 같이 사용하기 위한 target group ARNs. | `list(string)` | `[]` | no |

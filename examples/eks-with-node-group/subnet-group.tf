@@ -14,6 +14,10 @@ locals {
           az        = "ap-northeast-2c"
         }
       ]
+      tags = {
+        "kubernetes.io/cluster/${local.eks_cluster_name}" = "shared"
+        "kubernetes.io/role/elb"                          = 1
+      }
     }
     "parksm-private-subnet" = {
       subnets = [
@@ -26,6 +30,10 @@ locals {
           az        = "ap-northeast-2c"
         }
       ]
+      tags = {
+        "kubernetes.io/cluster/${local.eks_cluster_name}" = "shared"
+        "kubernetes.io/role/internal-elb"                 = 1
+      }
     }
   }
 }
@@ -47,4 +55,6 @@ module "subnet_group" {
       ipv4_cidr         = subnet.ipv4_cidr
     }
   }
+
+  tags = each.value.tags
 }

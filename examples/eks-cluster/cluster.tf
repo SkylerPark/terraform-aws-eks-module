@@ -243,3 +243,12 @@ module "cluster" {
     kms_key = module.cluster_kms.arn
   }
 }
+
+module "oidc_provider" {
+  source = "git::https://github.com/SkylerPark/terraform-aws-iam-module.git//modules/iam-oidc-identity-provider/?ref=tags/1.0.1"
+
+  url       = module.cluster.irsa_oidc_provider_url
+  audiences = ["sts.amazonaws.com"]
+
+  auto_thumbprint_enabled = true
+}

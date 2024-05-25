@@ -14,6 +14,10 @@ locals {
           az        = "ap-northeast-2c"
         }
       ]
+      tags = {
+        "kubernetes.io/cluster/${local.eks_cluster_name}" = "shared"
+        "kubernetes.io/role/elb"                          = 1
+      }
     }
     "parksm-private-subnet" = {
       subnets = [
@@ -26,6 +30,25 @@ locals {
           az        = "ap-northeast-2c"
         }
       ]
+      tags = {
+        "kubernetes.io/cluster/${local.eks_cluster_name}" = "shared"
+        "kubernetes.io/role/internal-elb"                 = 1
+      }
+    }
+    "parksm-secondary-subnet" = {
+      subnets = [
+        {
+          ipv4_cidr = "100.70.0.0/18"
+          az        = "ap-northeast-2a"
+        },
+        {
+          ipv4_cidr = "10.70.64.0/18"
+          az        = "ap-northeast-2c"
+        }
+      ]
+      tags = {
+        "karpenter.sh/discovery" = local.eks_name
+      }
     }
   }
 }
@@ -47,4 +70,5 @@ module "subnet_group" {
       ipv4_cidr         = subnet.ipv4_cidr
     }
   }
+  tags = each.value.tags
 }

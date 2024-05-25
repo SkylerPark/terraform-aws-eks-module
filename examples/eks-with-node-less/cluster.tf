@@ -6,7 +6,7 @@ locals {
 
 module "node_sg" {
   source = "git::https://github.com/SkylerPark/terraform-aws-vpc-module.git//modules/security-group/?ref=tags/1.1.5"
-  name   = "${local.eks_cluster_name}-eks-node-sg"
+  name   = "${local.eks_name}-eks-node-sg"
   vpc_id = module.vpc.id
 
   revoke_rules_on_delete = true
@@ -71,11 +71,14 @@ module "node_sg" {
       security_groups = [module.cluster.cluster_security_group]
     }
   ]
+  tags = {
+    "karpenter.sh/discovery" = local.eks_name
+  }
 }
 
 module "pod_sg" {
   source = "git::https://github.com/SkylerPark/terraform-aws-vpc-module.git//modules/security-group/?ref=tags/1.1.5"
-  name   = "${local.eks_cluster_name}-eks-pod-sg"
+  name   = "${local.eks_name}-eks-pod-sg"
   vpc_id = module.vpc.id
 
   revoke_rules_on_delete = true
@@ -134,7 +137,7 @@ module "pod_sg" {
 
 module "control_plane_sg" {
   source = "git::https://github.com/SkylerPark/terraform-aws-vpc-module.git//modules/security-group/?ref=tags/1.1.5"
-  name   = "${local.eks_cluster_name}-eks-control-plane-sg"
+  name   = "${local.eks_name}-eks-control-plane-sg"
   vpc_id = module.vpc.id
 
   revoke_rules_on_delete = true
@@ -242,4 +245,13 @@ module "cluster" {
     enabled = true
     kms_key = module.cluster_kms.arn
   }
+}
+
+module "oidc_provider" {
+  source = "git::https://github.com/SkylerPark/terraform-aws-iam-module.git//modules/iam-oidc-identity-provider/?ref=tags/1.0.1"
+
+  url       = module.cluster.irsa_oidc_provider_url
+  audiences = ["sts.amazonaws.com"]
+
+  auto_thumbprint_enabled = true
 }

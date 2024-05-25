@@ -28,6 +28,11 @@ output "status" {
   value       = aws_eks_cluster.this.status
 }
 
+output "irsa_oidc_provider_url" {
+  description = "OIDC provider IRSA (IAM Roles for Service Accounts) URL 정보."
+  value       = aws_eks_cluster.this.identity[0].oidc[0].issuer
+}
+
 output "kubernetes_network_config" {
   description = <<EOF
   Kubernetes network 설정 정보.

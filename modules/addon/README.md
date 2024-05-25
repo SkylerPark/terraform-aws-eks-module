@@ -25,7 +25,6 @@ No modules.
 | [aws_eks_addon.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_addon) | resource |
 | [aws_eks_addon_version.default](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/eks_addon_version) | data source |
 | [aws_eks_addon_version.latest](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/eks_addon_version) | data source |
-| [aws_eks_cluster.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/eks_cluster) | data source |
 
 ## Inputs
 
@@ -34,6 +33,7 @@ No modules.
 | <a name="input_addon_version"></a> [addon\_version](#input\_addon\_version) | (선택) EKS addon version. | `string` | `null` | no |
 | <a name="input_addon_version_type"></a> [addon\_version\_type](#input\_addon\_version\_type) | (필수) EKS addon version type. 가능한 값 `custom`, `default`, `latest`. `custom` 시 `addon_version` 을 입력. Default: `latest` | `string` | `"latest"` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | (필수) EKS cluster 이름. | `string` | n/a | yes |
+| <a name="input_cluster_version"></a> [cluster\_version](#input\_cluster\_version) | (필수) EKS cluster version. | `string` | n/a | yes |
 | <a name="input_configuration"></a> [configuration](#input\_configuration) | (선택) addon 에 대한 설정값. JSON 문자열 값은 `describe-addon-configuration` 의 결과에 JSON 값과 일치. | `string` | `null` | no |
 | <a name="input_conflict_resolution_strategy_on_create"></a> [conflict\_resolution\_strategy\_on\_create](#input\_conflict\_resolution\_strategy\_on\_create) | (Optional) 자체 관리형 추가 기능을 EKS 추가 기능으로 마이그레이션시 충돌을 해결하는 방법. 가능한 값 `NONE`, `OVERWRITE`. Default: `OVERWRITE`.<br>    `NONE` - 추가 기능이 충돌날 경우 값을 변경하지 않음 추가 기능 생성에 실패 가능성이 있음.<br>    `OVERWRITE` - 기본값과 기존값이 다를경우 기본값으로 변경. | `string` | `"OVERWRITE"` | no |
 | <a name="input_conflict_resolution_strategy_on_update"></a> [conflict\_resolution\_strategy\_on\_update](#input\_conflict\_resolution\_strategy\_on\_update) | (선택) EKS 기본값에서 값을 변경하는 경우 추가기능에 대한 충돌을 해결하는 방법. 가능한 값 `NONE`, `OVERWRITE` and `PRESERVE`. Default: `OVERWRITE`.<br>    `NONE` - 추가 기능이 충돌날 경우 값을 변경하지 않음.<br>    `OVERWRITE` - 기본값과 기존값이 다를경우 기본값으로 변경.<br>    `PRESERVE` - Amazon EKS는 값을 보존. | `string` | `"OVERWRITE"` | no |

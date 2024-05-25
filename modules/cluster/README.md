@@ -61,6 +61,7 @@ No modules.
 | <a name="output_endpoint"></a> [endpoint](#output\_endpoint) | Kubernetes API server Endpoint. |
 | <a name="output_endpoint_access"></a> [endpoint\_access](#output\_endpoint\_access) | Kubernetes API 서버 엔드포인트에 대한 액세스 구성. |
 | <a name="output_id"></a> [id](#output\_id) | cluster ID. |
+| <a name="output_irsa_oidc_provider_url"></a> [irsa\_oidc\_provider\_url](#output\_irsa\_oidc\_provider\_url) | OIDC provider IRSA (IAM Roles for Service Accounts) URL 정보. |
 | <a name="output_kubernetes_network_config"></a> [kubernetes\_network\_config](#output\_kubernetes\_network\_config) | Kubernetes network 설정 정보.<br>    `service_ipv4_cidr` - Kubernetes 서비스 IP 주소에 할당된 IPv4 CIDR 블록.<br>    `service_ipv6_cidr` - Kubernetes 서비스 IP 주소에 할당된 IPv6 CIDR 블록.<br>    `ip_family` - Kubernetes Pod 및 서비스 주소를 할당하는 데 사용되는 IP 제품군. |
 | <a name="output_logging"></a> [logging](#output\_logging) | control plane logging 설정 정보. |
 | <a name="output_name"></a> [name](#output\_name) | cluster 이름. |
