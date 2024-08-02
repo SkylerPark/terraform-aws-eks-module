@@ -24,11 +24,9 @@ Terraform 모듈을 사용하여 아래 서비스를 관리 합니다.
   - cluster
   - node group
   - aws auth
-  - eni config
   - fargate profile
   - addon
   - helm release
-  - karpenter
 
 ## Usage
 
