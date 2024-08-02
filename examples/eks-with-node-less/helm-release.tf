@@ -5,7 +5,7 @@ locals {
       namespace     = "kube-system"
       repository    = "https://aws.github.io/eks-charts"
       chart         = "aws-load-balancer-controller"
-      chart_version = "1.6.2"
+      chart_version = "1.8.1"
       set = [
         {
           name  = "serviceAccount.create"
@@ -29,7 +29,7 @@ locals {
         },
         {
           name  = "clusterName"
-          value = local.eks_cluster_name
+          value = module.cluster.name
         },
         {
           name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
@@ -41,25 +41,38 @@ locals {
       description      = "A Helm chart to deploy Karpenter"
       namespace        = "karpenter"
       create_namespace = true
-      repository       = "https://charts.karpenter.sh"
+      repository       = "oci://public.ecr.aws/karpenter"
       chart            = "karpenter"
-      chart_version    = "0.16.3"
+      chart_version    = "0.37.0"
+      wait             = true
       set = [
         {
-          name  = "clusterEndpoint"
-          value = module.cluster.endpoint
+          name  = "settings.clusterEndpoint"
+          value = module.eks_cluster.endpoint
         },
         {
-          name  = "clusterName"
-          value = local.eks_cluster_name
-        },
-        {
-          name  = "aws.defaultInstanceProfile"
-          value = module.karpenter_node_role.instance_profile.name
+          name  = "settings.clusterName"
+          value = module.eks_cluster.name
         },
         {
           name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
           value = module.karpenter_controller_role.arn
+        },
+        {
+          name  = "controller.resources.requests.cpu"
+          value = 1
+        },
+        {
+          name  = "controller.resources.requests.memory"
+          value = "1Gi"
+        },
+        {
+          name  = "controller.resources.limits.cpu"
+          value = 1
+        },
+        {
+          name  = "controller.resources.limits.memory"
+          value = "1Gi"
         }
       ]
     }
@@ -67,13 +80,15 @@ locals {
 }
 
 module "helm_releases" {
-  source        = "../../modules/helm-release"
-  for_each      = local.helm_releases
-  name          = each.key
-  description   = each.value.description
-  namespace     = each.value.namespace
-  repository    = each.value.repository
-  chart         = each.value.chart
-  chart_version = each.value.chart_version
-  set           = each.value.set
+  source           = "../../modules/helm-release"
+  for_each         = local.helm_releases
+  name             = each.key
+  description      = each.value.description
+  namespace        = each.value.namespace
+  create_namespace = try(each.value.create_namespace, false)
+  wait             = try(each.value.wait, true)
+  repository       = each.value.repository
+  chart            = each.value.chart
+  chart_version    = each.value.chart_version
+  set              = each.value.set
 }

@@ -5,7 +5,8 @@ locals {
       namespace     = "kube-system"
       repository    = "https://aws.github.io/eks-charts"
       chart         = "aws-load-balancer-controller"
-      chart_version = "1.6.2"
+      chart_version = "1.8.1"
+      wait          = true
       set = [
         {
           name  = "serviceAccount.create"
@@ -29,7 +30,7 @@ locals {
         },
         {
           name  = "clusterName"
-          value = local.eks_cluster_name
+          value = module.cluster.name
         }
       ]
     }
@@ -37,13 +38,15 @@ locals {
 }
 
 module "helm_releases" {
-  source        = "../../modules/helm-release"
-  for_each      = local.helm_releases
-  name          = each.key
-  description   = each.value.description
-  namespace     = each.value.namespace
-  repository    = each.value.repository
-  chart         = each.value.chart
-  chart_version = each.value.chart_version
-  set           = each.value.set
+  source           = "../../modules/helm-release"
+  for_each         = local.helm_releases
+  name             = each.key
+  description      = each.value.description
+  namespace        = each.value.namespace
+  create_namespace = try(each.value.create_namespace, false)
+  wait             = try(each.value.wait, true)
+  repository       = each.value.repository
+  chart            = each.value.chart
+  chart_version    = each.value.chart_version
+  set              = each.value.set
 }

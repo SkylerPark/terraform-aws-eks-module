@@ -17,7 +17,7 @@ module "fargate" {
   for_each = toset(["karpenter", "kube-system"])
 
   name         = each.key
-  cluster_name = local.eks_cluster_name
+  cluster_name = module.cluster.name
 
   subnets  = module.subnet_group["parksm-private-subnet"].ids
   iam_role = module.fargate_role.arn

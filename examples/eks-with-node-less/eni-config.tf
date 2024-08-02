@@ -5,11 +5,20 @@ locals {
   }
 }
 
-module "eni_config" {
-  source   = "../../modules/eni-config"
+resource "kubectl_manifest" "eni_config" {
   for_each = toset(["ap-northeast-2a", "ap-northeast-2c"])
-
-  name            = each.key
-  security_groups = [module.node_sg.id]
-  subnet          = local.eni_config_subnets[each.key][0]
+  yaml_body = yamlencode(
+    {
+      apiVersion = "crd.k8s.amazonaws.com/v1alpha1"
+      kind       = "ENIConfig"
+      metadata = {
+        name = each.key
+      }
+      spec = {
+        securityGroups = [module.node_sg.id]
+        subnet         = local.eni_config_subnets[each.key][0]
+      }
+    }
+  )
+  depends_on = [module.eks_addon]
 }

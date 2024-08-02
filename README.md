@@ -270,7 +270,7 @@ module "karpenter_controller_role" {
   name   = "karpenter-controller-role"
   trusted_oidc_provider_policies = [
     {
-      url = module.cluster.irsa_oidc_provider_url
+      url = replace(module.cluster.irsa_oidc_provider_url, "https://", "")
       conditions = [
         {
           key       = "sub"
@@ -318,7 +318,7 @@ module "karpenter_controller_role" {
             "Action" : "ec2:TerminateInstances",
             "Condition" : {
               "StringLike" : {
-                "ec2:ResourceTag/Name" : "${local.eks_name}-*"
+                "ec2:ResourceTag/Name" : "${local.eks_name}-node"
               }
             },
             "Effect" : "Allow",
@@ -332,71 +332,176 @@ module "karpenter_controller_role" {
   }
 }
 
-module "karpenter" {
-  source = "../../modules/karpenter"
-  provisioner = {
-    name = "default"
-    requirements = [
-      {
-        key      = "karpenter.k8s.aws/instance-family"
-        operator = "In"
-        values   = ["c5", "m5", "r5"]
-      },
-      {
-        key      = "karpenter.k8s.aws/instance-size"
-        operator = "NotIn"
-        values   = ["nano", "micro", "small", "large"]
-      },
-      {
-        key      = "topology.kubernetes.io/zone"
-        operator = "In"
-        values   = ["ap-northeast-2a", "ap-northeast-2c"]
-      },
-      {
-        key      = "karpenter.sh/capacity-type"
-        operator = "In"
-        values   = ["spot"]
-      },
-      {
-        key      = "kubernetes.io/arch"
-        operator = "In"
-        values : ["arm64"]
-      }
-    ]
-    provider_ref = {
-      name = "default"
-    }
-    consolidation = {
-      enabled = true
-    }
-  }
-  aws_node_template = {
-    name = "default"
-    subnet_selector = {
-      "karpenter.sh/discovery" = local.eks_name
-    }
-    security_group_selector = {
-      "karpenter.sh/discovery" = local.eks_name
-    }
-    ami_family = "AL2"
-    block_device_mappings = [
-      {
-        deviceName = "/dev/xvda"
-        ebs = {
-          amiFamily           = "AL2"
-          volumeSize          = "50G"
-          volumeType          = "gp3"
-          iops                = 3000
-          throughput          = 125
-          deleteOnTermination = true
-          encrypted           = true
+locals {
+  karpenter_config = {
+    "on-demand-default-amd64" = {
+      spec = {
+        disruption = {
+          consolidateAfter    = "10m"
+          consolidationPolicy = "WhenEmpty"
+          expireAfter         = "Never"
+        }
+        template = {
+          spec = {
+            nodeClassRef = {
+              apiVersion = "karpenter.k8s.aws/v1beta1"
+              kind       = "EC2NodeClass"
+              name       = "default"
+            }
+            requirements = [
+              {
+                key      = "node.kubernetes.io/instance-family"
+                operator = "In"
+                values   = ["c5a", "m5a", "r5a"]
+              },
+              {
+                key      = "karpenter.k8s.aws/instance-size"
+                operator = "In"
+                values   = ["xlarge", "2xlarge", "4xlarge", "8xlarge"]
+              },
+              {
+                key      = "topology.kubernetes.io/zone"
+                operator = "In"
+                values   = ["ap-northeast-2a", "ap-northeast-2c"]
+              },
+              {
+                key      = "karpenter.sh/capacity-type"
+                operator = "In"
+                values   = ["on-demand"]
+              },
+              {
+                key      = "kubernetes.io/os"
+                operator = "In"
+                values   = ["linux"]
+              },
+              {
+                key      = "capacity-spread"
+                operator = "In"
+                values   = ["1", "2"]
+              }
+            ]
+          }
         }
       }
-    ]
-    tags = {
-      Name = "${local.eks_cluster_name}-node"
+    }
+    "spot-default-amd64" = {
+      spec = {
+        disruption = {
+          consolidateAfter    = "10m"
+          consolidationPolicy = "WhenEmpty"
+          expireAfter         = "Never"
+        }
+        template = {
+          spec = {
+            nodeClassRef = {
+              apiVersion = "karpenter.k8s.aws/v1beta1"
+              kind       = "EC2NodeClass"
+              name       = "default"
+            }
+            requirements = [
+              {
+                key      = "node.kubernetes.io/instance-family"
+                operator = "In"
+                values   = ["c5a", "m5a", "r5a"]
+              },
+              {
+                key      = "karpenter.k8s.aws/instance-size"
+                operator = "In"
+                values   = ["xlarge", "2xlarge", "4xlarge", "8xlarge"]
+              },
+              {
+                key      = "topology.kubernetes.io/zone"
+                operator = "In"
+                values   = ["ap-northeast-2a", "ap-northeast-2c"]
+              },
+              {
+                key      = "karpenter.sh/capacity-type"
+                operator = "In"
+                values   = ["spot"]
+              },
+              {
+                key      = "kubernetes.io/os"
+                operator = "In"
+                values   = ["linux"]
+              },
+              {
+                key      = "capacity-spread"
+                operator = "In"
+                values   = ["3"]
+              }
+            ]
+          }
+        }
+      }
     }
   }
 }
 
+resource "kubectl_manifest" "node_pool" {
+  for_each = local.karpenter_config
+  yaml_body = yamlencode(
+    {
+      apiVersion = "karpenter.sh/v1beta1"
+      kind       = "NodePool"
+      metadata = {
+        name = each.key
+      }
+      spec = each.value.spec
+    }
+  )
+  depends_on = [module.helm_releases]
+}
+
+
+resource "kubectl_manifest" "ec2_node_class" {
+  yaml_body = yamlencode(
+    {
+      apiVersion = "karpenter.k8s.aws/v1beta1"
+      kind       = "EC2NodeClass"
+      metadata = {
+        name = "default"
+      }
+      spec = {
+        amiFamily = "AL2"
+        subnetSelectorTerms = [
+          {
+            tags = {
+              "karpenter.sh/discovery" = "${local.eks_cluster_name}"
+            }
+          }
+        ]
+        securityGroupSelectorTerms = [
+          {
+            tags = {
+              "karpenter.sh/discovery" = "${local.eks_cluster_name}"
+            }
+          }
+        ]
+        instanceProfile = module.karpenter_node_role.name
+        metadataOptions = {
+          httpEndpoint            = "enabled"
+          httpProtocolIPv6        = "disabled"
+          httpPutResponseHopLimit = 1
+          httpTokens              = "required"
+        }
+        blockDeviceMappings = [
+          {
+            deviceName = "/dev/xvda"
+            ebs = {
+              volumeSize          = "50Gi"
+              volumeType          = "gp3"
+              iops                = 3000
+              throughput          = 125
+              deleteOnTermination = true
+              encrypted           = true
+            }
+          }
+        ]
+        detailedMonitoring = true
+        userData           = null
+      }
+    }
+  )
+  depends_on = [module.helm_releases]
+}
 ```

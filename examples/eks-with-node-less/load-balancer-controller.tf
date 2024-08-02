@@ -3,7 +3,7 @@ module "load_balancer_controller_role" {
   name   = "load-balancer-controller-role"
   trusted_oidc_provider_policies = [
     {
-      url = module.cluster.irsa_oidc_provider_url
+      url = replace(module.cluster.irsa_oidc_provider_url, "https://", "")
       conditions = [
         {
           key       = "sub"

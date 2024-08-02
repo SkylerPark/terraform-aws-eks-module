@@ -44,8 +44,8 @@ module "node_group_role" {
 
 module "node_group" {
   source           = "../../modules/node-group"
-  name             = "${local.eks_cluster_name}-node-group"
-  cluster_name     = local.eks_cluster_name
+  name             = "${module.cluster.name}-node-group"
+  cluster_name     = module.cluster.name
   instance_ami     = data.aws_ami.eks_default_arm.id
   instance_type    = "t4g.medium"
   instance_key     = module.ssh_key.name
