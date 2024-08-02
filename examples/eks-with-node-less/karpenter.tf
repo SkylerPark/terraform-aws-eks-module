@@ -117,14 +117,19 @@ locals {
             }
             requirements = [
               {
-                key      = "node.kubernetes.io/instance-family"
+                key      = "karpenter.k8s.aws/instance-family"
                 operator = "In"
                 values   = ["c5a", "m5a", "r5a"]
               },
               {
-                key      = "karpenter.k8s.aws/instance-size"
+                key      = "karpenter.k8s.aws/instance-cpu"
                 operator = "In"
-                values   = ["xlarge", "2xlarge", "4xlarge", "8xlarge"]
+                values   = ["4", "8", "16", "32"]
+              },
+              {
+                key      = "kubernetes.io/arch"
+                operator = "In"
+                values   = ["amd64"]
               },
               {
                 key      = "topology.kubernetes.io/zone"
@@ -144,7 +149,7 @@ locals {
               {
                 key      = "capacity-spread"
                 operator = "In"
-                values   = ["1", "2"]
+                values   = ["1"]
               }
             ]
           }
@@ -167,14 +172,19 @@ locals {
             }
             requirements = [
               {
-                key      = "node.kubernetes.io/instance-family"
+                key      = "karpenter.k8s.aws/instance-family"
                 operator = "In"
                 values   = ["c5a", "m5a", "r5a"]
               },
               {
-                key      = "karpenter.k8s.aws/instance-size"
+                key      = "karpenter.k8s.aws/instance-cpu"
                 operator = "In"
-                values   = ["xlarge", "2xlarge", "4xlarge", "8xlarge"]
+                values   = ["4", "8", "16", "32"]
+              },
+              {
+                key      = "kubernetes.io/arch"
+                operator = "In"
+                values   = ["amd64"]
               },
               {
                 key      = "topology.kubernetes.io/zone"
@@ -194,7 +204,7 @@ locals {
               {
                 key      = "capacity-spread"
                 operator = "In"
-                values   = ["3"]
+                values   = ["2", "3"]
               }
             ]
           }
@@ -266,6 +276,9 @@ resource "kubectl_manifest" "ec2_node_class" {
         ]
         detailedMonitoring = true
         userData           = null
+        tags = {
+          Name = "${local.eks_cluster_name}-node"
+        }
       }
     }
   )
