@@ -75,12 +75,28 @@ module "karpenter_controller_role" {
             "Effect" : "Allow",
             "Resource" : "*",
             "Sid" : "ConditionalEC2Termination"
+          },
+          {
+            "Effect" : "Allow",
+            "Action" : "iam:PassRole",
+            "Resource" : module.karpenter_node_role.arn,
+            "Sid" : "PassNodeIAMRole"
+          },
+          {
+            "Effect" : "Allow",
+            "Action" : "eks:DescribeCluster",
+            "Resource" : module.cluster.arn,
+            "Sid" : "EKSClusterEndpointLookup"
           }
         ],
         "Version" : "2012-10-17"
       }
     )
   }
+}
+
+resource "aws_iam_service_linked_role" "spot" {
+  aws_service_name = "spot.amazonaws.com"
 }
 
 locals {
