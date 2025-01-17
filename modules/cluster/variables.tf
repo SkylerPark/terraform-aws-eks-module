@@ -231,6 +231,52 @@ variable "outpost_config" {
   nullable = true
 }
 
+variable "compute_config" {
+  description = <<EOF
+  (선택) EKS 자동 모드에 대한 컴퓨팅 구성. `compute_config` 블록 냐용.
+    (선택) `enabled` - 자동모드에 컴퓨팅 기능을 활성화 여부. Default: `false`.
+    (선택) `node_pools` - 자동모드에 컴퓨팅 리소스를 정의하는 노드 풀.
+    (선택) `node_role` - 자동 모드 인스턴스에 할당항 IAM 역할.
+  EOF
+  type = object({
+    enabled    = optional(bool, false)
+    node_pools = optional(list(string), [])
+    node_role  = optional(string)
+  })
+  default  = {}
+  nullable = false
+}
+
+variable "upgrade_policy" {
+  description = <<EOF
+  (선택) 클러스터에 사용할 지원 정책에 대한 구성 블록.
+    (선택) `support_type` - `EXTENDED` 의 경우 표준지원이 끝나면 확장지원으로 변경. `STANDARD` 표준지원이 끝나면 자동으로 업그레이드. Default: `STANDARD`.
+  EOF
+  type = object({
+    support_type = optional(string, "STANDARD")
+  })
+  default  = {}
+  nullable = false
+}
+
+variable "zonal_shift_config" {
+  description = <<EOF
+  (선택) 클러스터에 대한 영역 이동 구성이 포함된 구성 블록.
+    (선택) `enabled` - 클러스터 영역 이동이 활성화 여부.
+  EOF
+  type = object({
+    enabled = optional(bool, false)
+  })
+  default = {}
+}
+
+variable "authentication_mode" {
+  description = "(선택) 클러스터 인증 모드. 유효한값 `CONFIG_MAP`, `API` or `API_AND_CONFIG_MAP` Default: `API_AND_CONFIG_MAP`"
+  type        = string
+  default     = "API_AND_CONFIG_MAP"
+  nullable    = false
+}
+
 variable "timeouts" {
   description = "(선택) 리소스 생성/업데이트/삭제될 때까지 기다리는 시간."
   type = object({

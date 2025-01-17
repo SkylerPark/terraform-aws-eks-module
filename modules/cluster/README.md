@@ -34,6 +34,8 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_authentication_mode"></a> [authentication\_mode](#input\_authentication\_mode) | (선택) 클러스터 인증 모드. 유효한값 `CONFIG_MAP`, `API` or `API_AND_CONFIG_MAP` Default: `API_AND_CONFIG_MAP` | `string` | `"API_AND_CONFIG_MAP"` | no |
+| <a name="input_compute_config"></a> [compute\_config](#input\_compute\_config) | (선택) EKS 자동 모드에 대한 컴퓨팅 구성. `compute_config` 블록 냐용.<br>    (선택) `enabled` - 자동모드에 컴퓨팅 기능을 활성화 여부. Default: `false`.<br>    (선택) `node_pools` - 자동모드에 컴퓨팅 리소스를 정의하는 노드 풀.<br>    (선택) `node_role` - 자동 모드 인스턴스에 할당항 IAM 역할. | <pre>object({<br>    enabled    = optional(bool, false)<br>    node_pools = optional(list(string), [])<br>    node_role  = optional(string)<br>  })</pre> | `{}` | no |
 | <a name="input_endpoint_access"></a> [endpoint\_access](#input\_endpoint\_access) | (선택) Kubernetes API 서버 엔드포인트 액세스 구성. `endpoint_access` 블록 내용.<br>    (선택) `private_access_enabled` - 클러스터의 Kubernetes API 서버 엔드포인트에 대한 private 액세스를 활성화할지 여부. Default: `true`.<br>    (선택) `public_access_enabled` - 클러스터의 Kubernetes API 서버 엔드포인트에 대한 public 액세스를 활성화할지 여부. Default: `false`<br>    (선택) `public_access_cidrs` - 클러스터의 kubernetes API 서버 엔드포인트에 대한 public 통신하도록 허용된 CIDR 목록. Default: `0.0.0.0/0` . | <pre>object({<br>    private_access_enabled = optional(bool, true)<br>    public_access_enabled  = optional(bool, false)<br>    public_access_cidrs    = optional(list(string), ["0.0.0.0/0"])<br>  })</pre> | `{}` | no |
 | <a name="input_iam_role"></a> [iam\_role](#input\_iam\_role) | (선택) EKS 클러스터 IAM 역할의 ARN. | `string` | `null` | no |
 | <a name="input_kubernetes_network_config"></a> [kubernetes\_network\_config](#input\_kubernetes\_network\_config) | (선택) Kubernetes 네트워크 설정. `kubernetes_network_config` 블록 내용.<br>    (선택) `service_ipv4_cidr` - Kubernetes Pod 및 서비스 IP 주소를 할당할 CIDR 블록. 블록을 지정하지 않으면 Kubernetes는 '10.100.0.0/16' 또는 '172.20.0.0/16' CIDR 블록의 주소를 할당.<br>    (선택) `ip_family` - Kubernetes Pod 및 서비스 주소를 할당하는 데 사용되는 IP 제품. 유효한 값 'IPV4', 'IPV6'. Default: `IPV4`. | <pre>object({<br>    service_ipv4_cidr = optional(string)<br>    ip_family         = optional(string, "IPV4")<br>  })</pre> | `{}` | no |
@@ -49,6 +51,8 @@ No modules.
 | <a name="input_subnets"></a> [subnets](#input\_subnets) | (필수) 서로 다른 가용성 영역 두개 이상의 서브넷 ID 목록. | `list(string)` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | (선택) 리소스 태그 내용. | `map(string)` | `{}` | no |
 | <a name="input_timeouts"></a> [timeouts](#input\_timeouts) | (선택) 리소스 생성/업데이트/삭제될 때까지 기다리는 시간. | <pre>object({<br>    create = optional(string, "30m")<br>    update = optional(string, "60m")<br>    delete = optional(string, "15m")<br>  })</pre> | `{}` | no |
+| <a name="input_upgrade_policy"></a> [upgrade\_policy](#input\_upgrade\_policy) | (선택) 클러스터에 사용할 지원 정책에 대한 구성 블록.<br>    (선택) `support_type` - `EXTENDED` 의 경우 표준지원이 끝나면 확장지원으로 변경. `STANDARD` 표준지원이 끝나면 자동으로 업그레이드. Default: `STANDARD`. | <pre>object({<br>    support_type = optional(string, "STANDARD")<br>  })</pre> | `{}` | no |
+| <a name="input_zonal_shift_config"></a> [zonal\_shift\_config](#input\_zonal\_shift\_config) | (선택) 클러스터에 대한 영역 이동 구성이 포함된 구성 블록.<br>    (선택) `enabled` - 클러스터 영역 이동이 활성화 여부. | <pre>object({<br>    enabled = optional(bool, false)<br>  })</pre> | `{}` | no |
 
 ## Outputs
 
